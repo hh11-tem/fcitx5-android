@@ -379,7 +379,13 @@ abstract class BaseKeyboard(
     ): KeyAction? {
         val absX = kotlin.math.abs(event.totalX)
         val absY = kotlin.math.abs(event.totalY)
-
+        
+        // 添加最小滑动距离检查，避免轻微移动被误判为滑动
+        val minSwipeDistance = 1 // 至少需要1个单位的滑动距离
+        if (absX < minSwipeDistance && absY < minSwipeDistance) {
+            return null // 没有有效滑动，返回null让点击事件正常处理
+        }
+        
         // 判断主要滑动方向
         return if (absX > absY) {
             // 水平滑动
