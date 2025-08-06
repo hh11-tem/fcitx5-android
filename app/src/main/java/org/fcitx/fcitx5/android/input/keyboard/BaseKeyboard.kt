@@ -244,6 +244,26 @@ abstract class BaseKeyboard(
                             } || oldOnGestureListener.onGesture(view, event)
                         }
                     }
+                    is KeyDef.Behavior.MultiDirectionSwipe -> {
+                        swipeEnabled = true
+                        swipeThresholdX = inputSwipeThreshold
+                        swipeThresholdY = inputSwipeThreshold
+                        val oldOnGestureListener = onGestureListener ?: OnGestureListener.Empty
+                        onGestureListener = OnGestureListener { view, event ->
+                            when (event.type) {
+                                GestureType.Up -> {
+                                    if (!event.consumed) {
+                                        val action = determineSwipeDirection(event, it)
+                                        if (action != null) {
+                                            onAction(action)
+                                            true
+                                        } else false
+                                    } else false
+                                }
+                                else -> false
+                            } || oldOnGestureListener.onGesture(view, event)
+                        }
+                    }
                     is KeyDef.Behavior.DoubleTap -> {
                         doubleTapEnabled = true
                         onDoubleTapListener = { _ ->
@@ -351,6 +371,23 @@ abstract class BaseKeyboard(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         val (x, y) = intArrayOf(0, 0).also { getLocationInWindow(it) }
         bounds.set(x, y, x + width, y + height)
+    }
+
+    private fun determineSwipeDirection(
+        event: CustomGestureView.Event,
+        behavior: KeyDef.Behavior.MultiDirectionSwipe
+    ): KeyAction? {
+        val absX = kotlin.math.abs(event.totalX)
+        val absY = kotlin.math.abs(event.totalY)
+
+        // 判断主要滑动方向
+        return if (absX > absY) {
+            // 水平滑动
+            if (event.totalX > 0) behavior.rightAction else behavior.leftAction
+        } else {
+            // 垂直滑动
+            if (event.totalY > 0) behavior.downAction else behavior.upAction
+        }
     }
 
     private fun findTargetChild(x: Float, y: Float): View? {
